@@ -4,6 +4,7 @@
 #include "polynomial.h"
 #include "ui_mainwindow.h"
 
+#include <QDebug>
 #include <QSettings>
 #include <QTimer>
 
@@ -18,32 +19,44 @@ MainWindow::MainWindow(QWidget* parent)
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 
-    ui->graphicsView->setData(model->data());
-
-    constexpr size_t N = 16;
-    Polynomial<N> poly;
-    poly.setData(model->data());
-    for (int var = 0; var < 1000; ++var) {
-        poly.calcCoef();
-    }
+    ui->gvData->setData(model->data(), 0);
 
     auto model2 = new CoeffModel(ui->tableView_2);
-    model2->setData(poly.getCoeff());
-
     ui->tableView_2->setModel(model2);
     ui->tableView_2->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tableView_2->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 
-    auto data1 = poly.calc(model->data());
-    ui->graphicsView->setData3(data1);
+    connect(ui->sbxPrec, qOverload<int>(&QSpinBox::valueChanged), model2, &CoeffModel::setPrec);
+    connect(ui->sbxDeg, qOverload<int>(&QSpinBox::valueChanged), [model, model2, this](int deg) { //
+        Polynomial poly;
+        poly.setData(model->data());
+        poly.calcCoefCt(deg);
+        model2->setData(poly.getCoeff());
+        {
+            auto data1 = poly.calcData(model->data());
+            ui->gvData->setData(data1, 1);
+            auto data2 = model->data();
+            for (int i = 0; i < data1.size(); ++i)
+                data1[i].ry() -= data2[i].y();
+            ui->gvDelta->setDeltaData(data1, 1);
+        }
+        poly.calcCoefRt(deg);
+        model2->setData(poly.getCoeff(), 1);
+        {
+            auto data1 = poly.calcData(model->data());
+            ui->gvData->setData(data1, 2);
+            auto data2 = model->data();
+            for (int i = 0; i < data1.size(); ++i)
+                data1[i].ry() -= data2[i].y();
+            ui->gvDelta->setDeltaData(data1, 2);
+        }
+    });
 
-    auto data2 = model->data();
-    for (int i = 0; i < data1.size(); ++i)
-        data1[i].ry() -= data2[i].y();
-    ui->graphicsView_3->setData2(data1);
+    for (int var = 0; var < 100; ++var) {
+        ui->sbxDeg->valueChanged(var % 32);
+    }
 
     loadSetings();
-    //    QTimer::singleShot(100, this, &QWidget::close);
 }
 
 MainWindow::~MainWindow()
@@ -58,7 +71,7 @@ void MainWindow::saveSetings()
     settings.beginGroup("MainWindow");
 
     qDebug() << "last avg" << settings.value("avg").toDouble() << "us";
-    settings.setValue("avg", Timer::avg / Timer::ctr);
+    settings.setValue("avg", TimerCt::avg / TimerCt::ctr);
 
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());

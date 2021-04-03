@@ -17,27 +17,28 @@ msvc:{
 }
 
 gcc:{
-    QMAKE_CXXFLAGS += -std=c++2a \
+    QMAKE_CXXFLAGS += \
+    -std=c++2a \
     -Wno-deprecated-copy
 }
 
 SOURCES += \
     callout.cpp \
-    chart.cpp \
     coeffmodel.cpp \
     datamodel.cpp \
     main.cpp \
     mainwindow.cpp \
     polynomial.cpp \
+    timer.cpp \
     view.cpp
 
 HEADERS += \
     callout.h \
-    chart.h \
     coeffmodel.h \
     datamodel.h \
     mainwindow.h \
     polynomial.h \
+    timer.h \
     view.h
 
 FORMS += \

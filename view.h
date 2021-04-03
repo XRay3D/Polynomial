@@ -52,17 +52,18 @@ class View : public QChartView {
 
 public:
     View(QWidget* parent = 0);
-    void setData(const QPolygonF& data);
-    void setData3(const QPolygonF& data);
-    void setData2(const QPolygonF& data);
+    void setData(const QPolygonF& data, int s);
+    void setDeltaData(const QPolygonF& data, int s);
+    void setPrec(int prec) ;
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
+
+//    void mousePressEvent(QMouseEvent* event) override;
+//    void mouseReleaseEvent(QMouseEvent* event) override;
 
 public slots:
     void keepCallout();
