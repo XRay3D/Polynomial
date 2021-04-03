@@ -47,13 +47,13 @@ class Callout;
 
 QT_CHARTS_USE_NAMESPACE
 
-class View : public QChartView {
+class ChartView : public QChartView {
     Q_OBJECT
 
 public:
-    View(QWidget* parent = 0);
+    ChartView(QWidget* parent = 0);
     void setData(const QPolygonF& data, int s);
-    void setDeltaData(const QPolygonF& data, int s);
+    void setDeltaData(const QPolygonF& data);
     void setPrec(int prec) ;
 
 protected:

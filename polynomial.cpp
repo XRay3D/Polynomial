@@ -23,72 +23,61 @@ struct It {
 struct calc_i {
     virtual std::vector<ld> calc(const PolygonF&) = 0;
 };
-
+#ifdef __CT__
 template <index_t D, index_t degree = D + 1>
 struct calcCt final : calc_i {
-    array<degree, array<degree>> matrix {};
-    array<degree> y {};
-    array<degree> c {}; //результат
-    //построение исходной матрицы
-
     std::vector<ld> calc(const PolygonF& data) override
     {
         qDebug(__FUNCTION__);
-        TimerCt t;
+        // Timer t { 0 };
+        array<degree, array<degree>> matrix {};
+        array<degree> y {};
+        array<degree> c {}; //результат
 
-        matrix = array<degree, array<degree>> {};
-        y = array<degree> {};
-        c = array<degree> {};
+        constexpr auto K = [](index_t K) { return D - K; };
+        constexpr auto J = [](index_t J) { return D - J; };
+        constexpr auto I = [](index_t I) { return D - I; };
 
         { //построение исходной матрицы
-            TimerCt t;
-            auto forMatrix = [this]<index_t J, index_t... I>(ld x, It<J>, Seq<I...>)
+            // Timer t { 1 };
+            auto forMatrix = [&]<index_t J, index_t... Is>(ld x, It<J>, Seq<Is...>)
             {
-                ((matrix[I][J] += pow(x, J + I)), ...);
+                ((matrix[Is][J] += pow(x, J + Is)), ...);
             };
-            auto forY = [forMatrix, &data, this]<index_t J>(It<J>) {
+            auto forY = [&]<index_t J>(It<J>) {
                 for (auto&& var : data) {
                     y[J] += pow(var.x(), J) * var.y();
                     forMatrix(var.x(), It<J> {}, MakeSeq<degree> {});
                 }
             };
-            [forY]<index_t... j>(Seq<j...>)
-            {
-                (forY(It<j> {}), ...);
-            }
+            [&]<index_t... Js>(Seq<Js...>) { (forY(It<Js> {}), ...); }
             (MakeSeq<degree> {});
         }
 
         { //преобразование матрицы системы уравнений в диагональную а-ля половинчатую матрицу
-            TimerCt t;
-            auto for3 = [this]<index_t I, index_t K, index_t... J>(It<I>, It<K>, ld && Koef, Seq<J...>)
+            // Timer t { 2 };
+            auto for3 = [&]<index_t I, index_t K, index_t... Js>(It<I>, It<K>, ld && Koef, Seq<Js...>)
             {
-                ((matrix[J][K] = (J == I) ? ld {} : matrix[J][K] * Koef - matrix[J][I]), ...);
+                ((matrix[Js][K] = (Js == I) ? ld {} : matrix[Js][K] * Koef - matrix[Js][I]), ...);
                 y[K] = y[K] * Koef - y[I];
             };
-            auto for2 = [ for3, this ]<index_t I, index_t... K>(It<I>, Seq<K...>)
+            auto for2 = [&]<index_t I, index_t... Ks>(It<I>, Seq<Ks...>)
             {
-                constexpr auto k = [](index_t K_) { return D - K_; };
-                ((matrix[I][k(K)] != 0 ? for3(It<I> {}, It<k(K)> {}, matrix[I][I] / matrix[I][k(K)], MakeSeq<degree> {}) : void(K)), ...);
+                ((matrix[I][K(Ks)] != 0 ? for3(It<I> {}, It<K(Ks)> {}, matrix[I][I] / matrix[I][K(Ks)], MakeSeq<degree> {}) : void(Ks)), ...);
             };
-            [for2]<index_t... I>(Seq<I...>)
-            {
-                (for2(It<I> {}, MakeSeq<D - I> {}), ...);
-            }
+            [&]<index_t... I>(Seq<I...>) { (for2(It<I> {}, MakeSeq<D - I> {}), ...); }
             (MakeSeq<degree> {});
         }
 
         { //поиск коэффициэнтов C
-            TimerCt t;
-            auto for2 = [this]<index_t I, index_t... J>(It<I>, Seq<J...>)
+            // Timer t { 3 };
+            auto for2 = [&]<index_t I, index_t... Js>(It<I>, Seq<Js...>)
             {
-                static constexpr auto j = [](index_t J_) { return D - J_; };
-                ((c[I] -= matrix[j(J)][I] * c[j(J)] / matrix[I][I]), ...);
+                ((c[I] -= matrix[J(Js)][I] * c[J(Js)] / matrix[I][I]), ...);
             };
-            [ for2, this ]<index_t... I>(Seq<I...>)
+            [&]<index_t... Is>(Seq<Is...>)
             {
-                constexpr auto i = [](index_t I_) { return D - I_; };
-                ((c[i(I)] = y[i(I)] / matrix[i(I)][i(I)], for2(It<i(I)> {}, MakeSeq<D - i(I)> {})), ...);
+                ((c[I(Is)] = y[I(Is)] / matrix[I(Is)][I(Is)], for2(It<I(Is)> {}, MakeSeq<D - I(Is)> {})), ...);
             }
             (MakeSeq<degree> {});
             std::vector<ld> coeff(degree);
@@ -98,18 +87,31 @@ struct calcCt final : calc_i {
         }
     }
 };
+
+template <index_t... Is>
+auto arrayOfCalcCt(Seq<Is...>)
+{
+    static constexpr auto size = 8; // sizeof(calcCt<0>);
+    static char placeHolder[size * sizeof...(Is)] = {};
+    static calc_i* funcs[] = { new (placeHolder + Is * size) calcCt<Is>... };
+    return ((funcs));
+};
+
+#endif
+
 template <index_t D, index_t degree = D + 1>
 struct calcRt final : calc_i {
     std::vector<ld> calc(const PolygonF& data) override
     {
         qDebug(__FUNCTION__);
-        TimerRt t;
+        // Timer t { 4 };
 
-        ld matrix[degree][degree] {};
-        ld y[degree] {};
+        array<degree, array<degree>> matrix {};
+        array<degree> y {};
+        array<degree> c {}; //результат
 
         { //построение исходной матрицы
-            TimerRt t;
+            // Timer t { 5 };
             for (index_t j = 0; j < degree; j++) {
                 for (auto&& var : data) {
                     y[j] += pow(var.x(), j) * var.y();
@@ -121,7 +123,7 @@ struct calcRt final : calc_i {
         }
 
         { //преобразование матрицы системы уравнений в диагональную а-ля половинчатую матрицу
-            TimerRt t;
+            // Timer t { 6 };
             for (index_t i = 0; i < degree; i++) {
                 for (index_t k = i + 1; k < degree; k++) {
                     if (matrix[i][k] != 0) {
@@ -136,8 +138,7 @@ struct calcRt final : calc_i {
         }
 
         { //поиск коэффициэнтов C
-            TimerRt t;
-            ld c[degree] {}; //результат
+            // Timer t { 7 };
             for (index_t i = degree - 1; i != std::numeric_limits<index_t>::max(); --i) {
                 c[i] = y[i] / matrix[i][i];
                 for (index_t j = i + 1; j < degree; ++j)
@@ -152,18 +153,9 @@ struct calcRt final : calc_i {
 };
 
 template <index_t... Is>
-auto arrayOfCalcCt(Seq<Is...>)
-{
-    static constexpr auto size = sizeof(calcCt<0>);
-    static char placeHolder[size * sizeof...(Is)] = {};
-    static calc_i* funcs[] = { new (placeHolder + Is * size) calcCt<Is>... };
-    return ((funcs));
-};
-
-template <index_t... Is>
 auto arrayOfCalcRt(Seq<Is...>)
 {
-    static constexpr auto size = sizeof(calcRt<0>);
+    static constexpr auto size = 8; // sizeof(calcRt<0>);
     static char placeHolder[size * sizeof...(Is)] = {};
     static calc_i* funcs[] = { new (placeHolder + Is * size) calcRt<Is>... };
     return ((funcs));
@@ -185,17 +177,17 @@ void Polynomial::addData(const PointF& xy) { data.push_back(xy); }
 
 void Polynomial::setData(const PolygonF& xy) { data = xy; }
 
-void Polynomial::calcCoefCt(index_t D)
+void Polynomial::clear()
 {
-    if (D >= MaxDegree + 1 || D < 1)
-        return;
-    coeff = arrayOfCalcCt(MakeSeq<MaxDegree + 1> {})[D]->calc(data);
+    coeff.clear();
+    data.clear();
 }
 
-void Polynomial::calcCoefRt(index_t D)
+void Polynomial::calcCoef(index_t D)
 {
     if (D >= MaxDegree + 1 || D < 1)
         return;
+    //    coeff = arrayOfCalcCt(MakeSeq<MaxDegree + 1> {})[D]->calc(data);
     coeff = arrayOfCalcRt(MakeSeq<MaxDegree + 1> {})[D]->calc(data);
 }
 

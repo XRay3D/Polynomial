@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "polynomial.h"
+
 #include <QMainWindow>
 #include <qglobal.h>
 
@@ -22,5 +24,10 @@ private:
 
     void saveSetings();
     void loadSetings();
+
+    QString coefFileName;
+    QString dataFileName;
+
+    Polynomial poly;
 };
 #endif // MAINWINDOW_H

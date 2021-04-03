@@ -8,6 +8,7 @@ class DataModel : public QAbstractTableModel {
     Q_OBJECT
 
     QPolygonF m_data;
+    std::vector<double> m_dataComp;
 signals:
 
 public:
@@ -25,10 +26,12 @@ public:
     enum {
         X,
         Y,
+        Comp,
         ColumnCount
     };
 
     const QPolygonF& data() const noexcept { return m_data; };
+    void load(const QString& fileName);
 };
 
 #endif // DATAMODEL_H

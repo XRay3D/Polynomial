@@ -25,9 +25,9 @@ public:
     void addData(double x, double y);
     void addData(const PointF& xy);
     void setData(const PolygonF& xy);
+    void clear();
 
-    void calcCoefCt(index_t D);
-    void calcCoefRt(index_t D);
+    void calcCoef(index_t D);
 
     PolygonF calcData(PolygonF in);
 
