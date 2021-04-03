@@ -18,7 +18,11 @@ struct Timer {
     //    using duration_cast = std::chrono::duration_cast;
     //    using duration = std::chrono::duration;
     //    using milliseconds = std::chrono::milliseconds;
+#ifdef __gnu_linux__
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> t1;
+#else
     std::chrono::time_point<std::chrono::steady_clock> t1;
+#endif
     static inline double avg {};
     static inline int ctr {};
 
@@ -89,7 +93,7 @@ public:
             }
 
             { //преобразование матрицы системы уравнений в диагональную а-ля половинчатую матрицу
-                if (0) {
+                if (1) {
                     static auto for3 = [&matrix, &y ]<size_t I, size_t K, size_t... J>(It<I>, It<K>, ld && Koef, Seq<J...>)
                     {
                         ((matrix[J][K] = (J == I) ? ld {} : matrix[J][K] * Koef - matrix[J][I]), ...);

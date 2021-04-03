@@ -17,7 +17,8 @@ msvc:{
 }
 
 gcc:{
-    QMAKE_CXXFLAGS += -std=c++2A
+    QMAKE_CXXFLAGS += -std=c++2a \
+    -Wno-deprecated-copy
 }
 
 SOURCES += \
