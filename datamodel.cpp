@@ -5,7 +5,7 @@
 DataModel::DataModel(QObject* parent)
     : QAbstractTableModel(parent) //
 {
-    QFile file("new 1.txt");
+    QFile file("data.txt");
     if (file.open(QIODevice::ReadOnly)) {
         QTextStream stream(&file);
         QString line;
