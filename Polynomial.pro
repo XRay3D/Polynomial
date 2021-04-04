@@ -29,16 +29,16 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     polynomial.cpp \
-    timer.cpp \
     view.cpp
 
 HEADERS += \
     callout.h \
     coeffmodel.h \
+    ctre.hpp \
     datamodel.h \
     mainwindow.h \
     polynomial.h \
-    timer.h \
+    types.h \
     view.h
 
 FORMS += \

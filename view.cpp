@@ -69,8 +69,8 @@ ChartView::ChartView(QWidget* parent)
     }
     series[0]->setName("Данные");
     series[1]->setName("Перерасчет");
-    series[0]->setPen(QPen(Qt::black, 2));
-    series[1]->setPen(QPen(Qt::red, 2));
+    series[0]->setPen(QPen(Qt::black, 1));
+    series[1]->setPen(QPen(Qt::red, 1));
 
     chart->createDefaultAxes();
     chart->setAcceptHoverEvents(true);

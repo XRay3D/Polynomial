@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>827</width>
-    <height>596</height>
+    <width>1280</width>
+    <height>720</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,7 +52,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QSpinBox" name="sbxPrec">
+       <widget class="QSpinBox" name="sbxPrecision">
         <property name="minimumSize">
          <size>
           <width>50</width>
@@ -130,7 +130,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>827</width>
+     <width>1280</width>
      <height>20</height>
     </rect>
    </property>

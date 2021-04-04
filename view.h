@@ -52,9 +52,9 @@ class ChartView : public QChartView {
 
 public:
     ChartView(QWidget* parent = 0);
-    void setData(const QPolygonF& data, int s);
+    void setData(const QPolygonF& data, int s = {});
     void setDeltaData(const QPolygonF& data);
-    void setPrec(int prec) ;
+    void setPrec(int prec);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -62,8 +62,8 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
 
-//    void mousePressEvent(QMouseEvent* event) override;
-//    void mouseReleaseEvent(QMouseEvent* event) override;
+    //    void mousePressEvent(QMouseEvent* event) override;
+    //    void mouseReleaseEvent(QMouseEvent* event) override;
 
 public slots:
     void keepCallout();

@@ -1,15 +1,19 @@
 #ifndef DATAMODEL_H
 #define DATAMODEL_H
 
+#include "types.h"
 #include <QAbstractTableModel>
-#include <QPolygonF>
 
 class DataModel : public QAbstractTableModel {
     Q_OBJECT
 
-    QPolygonF m_data;
-    std::vector<double> m_dataComp;
+    Data m_data;
+    Degrees m_dataComp;
+    int m_precision { 3 };
+
 signals:
+    void dataChanged_(const Data&);
+    void dataCompChanged(const Degrees&);
 
 public:
     explicit DataModel(QObject* parent = nullptr);
@@ -24,14 +28,18 @@ public:
     Qt::ItemFlags flags(const QModelIndex& = {}) const override;
 
     enum {
-        X,
-        Y,
-        Comp,
+        ColumnX,
+        ColumnY,
+        ColumnComp,
         ColumnCount
     };
 
-    const QPolygonF& data() const noexcept { return m_data; };
+    const Data& data() const noexcept;
+    void setNewData(const Data& data);
+    void setPrecision(int prec);
+
     void load(const QString& fileName);
+    void save(const QString& fileName) const;
 };
 
 #endif // DATAMODEL_H

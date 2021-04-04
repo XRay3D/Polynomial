@@ -4,7 +4,6 @@
 #include "polynomial.h"
 
 #include <QMainWindow>
-#include <qglobal.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -18,6 +17,10 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
+
+signals:
+    void dataLoaded(const Data&);
+    void coeffLoaded(const Degrees&);
 
 private:
     Ui::MainWindow* ui;

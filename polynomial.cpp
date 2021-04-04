@@ -20,13 +20,13 @@ template <index_t N = 0>
 struct It {
 };
 
-struct calc_i {
-    virtual std::vector<ld> calc(const PolygonF&) = 0;
+struct calcDegrees_i {
+    virtual std::vector<ld> calcDegrees(const Data&) = 0;
 };
 #ifdef __CT__
 template <index_t D, index_t degree = D + 1>
-struct calcCt final : calc_i {
-    std::vector<ld> calc(const PolygonF& data) override
+struct calcDegreesCt final : calcDegrees_i {
+    std::vector<ld> calcDegrees(const PolygonF& data) override
     {
         qDebug(__FUNCTION__);
         // Timer t { 0 };
@@ -91,17 +91,17 @@ struct calcCt final : calc_i {
 template <index_t... Is>
 auto arrayOfCalcCt(Seq<Is...>)
 {
-    static constexpr auto size = 8; // sizeof(calcCt<0>);
+    static constexpr auto size = 8; // sizeof(calcDegreesCt<0>);
     static char placeHolder[size * sizeof...(Is)] = {};
-    static calc_i* funcs[] = { new (placeHolder + Is * size) calcCt<Is>... };
+    static calcDegrees_i* funcs[] = { new (placeHolder + Is * size) calcDegreesCt<Is>... };
     return ((funcs));
 };
 
 #endif
 
 template <index_t D, index_t degree = D + 1>
-struct calcRt final : calc_i {
-    std::vector<ld> calc(const PolygonF& data) override
+struct calcDegreesRt final : calcDegrees_i {
+    std::vector<ld> calcDegrees(const Data& data) override
     {
         qDebug(__FUNCTION__);
         // Timer t { 4 };
@@ -155,53 +155,60 @@ struct calcRt final : calc_i {
 template <index_t... Is>
 auto arrayOfCalcRt(Seq<Is...>)
 {
-    static constexpr auto size = 8; // sizeof(calcRt<0>);
+    static constexpr auto size = 8; // sizeof(calcDegreesRt<0>);
     static char placeHolder[size * sizeof...(Is)] = {};
-    static calc_i* funcs[] = { new (placeHolder + Is * size) calcRt<Is>... };
+    static calcDegrees_i* funcs[] = { new (placeHolder + Is * size) calcDegreesRt<Is>... };
     return ((funcs));
 };
 
 ld Polynomial::calcPoly(ld x, index_t size)
 {
-    if (!coeff.size())
+    if (!m_degrees.size())
         return {};
-    return (size < coeff.size() - 2) ? coeff[size] + x * calcPoly(x, size + 1)
-                                     : coeff[size] + x * coeff[size + 1];
+    return (size < m_degrees.size() - 2) ? m_degrees[size] + x * calcPoly(x, size + 1)
+                                         : m_degrees[size] + x * m_degrees[size + 1];
 }
 
 Polynomial::Polynomial() { }
 
-void Polynomial::addData(double x, double y) { data.push_back({ x, y }); }
+void Polynomial::addData(double x, double y) { m_data.push_back({ x, y }); }
 
-void Polynomial::addData(const PointF& xy) { data.push_back(xy); }
+void Polynomial::addData(const DataPoint& xy) { m_data.push_back(xy); }
 
-void Polynomial::setData(const PolygonF& xy) { data = xy; }
+void Polynomial::setData(const Data& xy) { m_data = xy; }
 
 void Polynomial::clear()
 {
-    coeff.clear();
-    data.clear();
+    m_degrees.clear();
+    m_data.clear();
 }
 
-void Polynomial::calcCoef(index_t D)
+void Polynomial::calcDegrees(index_t D)
 {
     if (D >= MaxDegree + 1 || D < 1)
         return;
-    //    coeff = arrayOfCalcCt(MakeSeq<MaxDegree + 1> {})[D]->calc(data);
-    coeff = arrayOfCalcRt(MakeSeq<MaxDegree + 1> {})[D]->calc(data);
+    //    coeff = arrayOfCalcCt(MakeSeq<MaxDegree + 1> {})[D]->calcDegrees(data);
+    m_degrees = arrayOfCalcRt(MakeSeq<MaxDegree + 1> {})[D]->calcDegrees(m_data);
 }
 
-PolygonF Polynomial::calcData(PolygonF in)
+Data Polynomial::calcData(Data in)
 {
     for (auto&& point : in)
         point.ry() = calcPoly(point.x());
     return in;
 }
 
-std::vector<double> Polynomial::getCoeff() const
+Degrees Polynomial::degrees() const
 {
-    std::vector<double> copy(coeff.size(), 0.0);
-    for (size_t i = 0; i < coeff.size(); ++i)
-        copy[i] = coeff[i];
+    Degrees copy(m_degrees.size(), 0.0);
+    for (size_t i = 0; i < m_degrees.size(); ++i)
+        copy[i] = m_degrees[i];
     return copy;
+}
+
+void Polynomial::setDegrees(const Degrees& degrees)
+{
+    m_degrees.resize(degrees.size());
+    for (size_t i = 0; i < m_degrees.size(); ++i)
+        m_degrees[i] = degrees[i];
 }

@@ -1,15 +1,19 @@
 #include "mainwindow.h"
 
 #include <QApplication>
-#include <qglobal.h>
+#include <QSettings>
 
-int main(int argc, char* argv[]) {
-    QApplication a(argc, argv);
+int main(int argc, char* argv[])
+{
+    QApplication app(argc, argv);
 
-    a.setOrganizationName("XrSoft");
-    a.setApplicationName("Polynomial");
+    app.setOrganizationName("XrSoft");
+    app.setApplicationName("Polynomial");
+
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, app.applicationDirPath());
 
     MainWindow w;
     w.show();
-    return a.exec();
+    return app.exec();
 }
