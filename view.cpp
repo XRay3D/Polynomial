@@ -120,6 +120,8 @@ void ChartView::setData2(const QPolygonF& data) {
 }
 
 void ChartView::setDeltaData(const QPolygonF& data) {
+    if(data.empty())
+        return;
     auto lineSeries = static_cast<QLineSeries*>(chart()->series()[1]);
     lineSeries->replace(data);
     auto [min, max] = rng::minmax(data, {}, [](const QPointF& p) { return p.y(); });

@@ -7,7 +7,6 @@
 #include <utility>
 #include <vector>
 
-
 template <index_t Size, class T = ld>
 using array = std::array<T, Size>;
 
@@ -18,12 +17,13 @@ struct It {
 struct calcDegrees_i {
     virtual std::vector<ld> calcDegrees(const Data&) = 0;
 };
+
+//#define __CT__
 #ifdef __CT__
 template <index_t D, index_t degree = D + 1>
 struct calcDegreesCt final : calcDegrees_i {
-    std::vector<ld> calcDegrees(const PolygonF& data) override {
-        qDebug(__FUNCTION__);
-        // Timer t { 0 };
+    std::vector<ld> calcDegrees(const Data& data) override {
+        Timer{__FUNCTION__};
         array<degree, array<degree>> matrix{};
         array<degree> y{};
         array<degree> c{}; //результат
@@ -84,8 +84,7 @@ auto arrayOfCalcCt(Seq<Is...>) {
     static calcDegrees_i* funcs[] = {new(placeHolder + Is * size) calcDegreesCt<Is>...};
     return ((funcs));
 };
-
-#endif
+#else
 
 template <index_t D, index_t degree = D + 1>
 struct calcDegreesRt final : calcDegrees_i {
@@ -146,6 +145,8 @@ auto arrayOfCalcRt(Seq<Is...>) {
     return ((funcs));
 };
 
+#endif
+
 ld Polynomial::calcPoly(ld x, index_t size) {
     if(!m_degrees.size())
         return {};
@@ -170,8 +171,11 @@ void Polynomial::calcDegrees(index_t D) {
     if(D >= MaxDegree + 1 || D < 1)
         return;
     try {
-        //    coeff = arrayOfCalcCt(MakeSeq<MaxDegree + 1> {})[D]->calcDegrees(data);
+#ifdef __CT__
+        m_degrees = arrayOfCalcCt(MakeSeq<MaxDegree + 1>{})[D]->calcDegrees(m_data);
+#else
         m_degrees = arrayOfCalcRt(MakeSeq<MaxDegree + 1>{})[D]->calcDegrees(m_data);
+#endif
     } catch(...) {
         return;
     }

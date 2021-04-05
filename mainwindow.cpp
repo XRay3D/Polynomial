@@ -8,8 +8,10 @@
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
+#include <QProgressDialog>
 #include <QSettings>
 #include <QTextStream>
+#include <QThread>
 #include <QToolBar>
 
 MainWindow::MainWindow(QWidget* parent)
@@ -82,6 +84,8 @@ MainWindow::MainWindow(QWidget* parent)
         toolbar->addAction(QIcon::fromTheme("labplot-xy-smoothing-curve"), "Пересчитать данные", [this, dataModel] {
             poly.calcData(dataModel->data());
         });
+        toolbar->addSeparator();
+        toolbar->addAction(QIcon::fromTheme("help-about"), "Бенчмарк", this, &MainWindow::bench);
     }
 
     connect(&poly, &Polynomial::dataChanged, ui->gvData, &ChartView::setData2);
@@ -100,10 +104,6 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->sbxPrecision, qOverload<int>(&QSpinBox::valueChanged), dataModel, &DataModel::setPrecision);
 
     loadSetings();
-
-    //    for(int i = 0; i < 100; ++i) {
-    //        ui->cbxDegrees->valueChanged(1);
-    //    }
 }
 
 MainWindow::~MainWindow() {
@@ -185,4 +185,70 @@ QString MainWindow::actionName() {
     if(auto action = qobject_cast<QAction*>(sender()); action)
         return action->text();
     return {};
+}
+
+void MainWindow::bench() {
+    Timer::avg.clear();
+    Timer::ctr.clear();
+    QProgressDialog pd;
+    pd.setMaximum(99);
+    Polynomial poly;
+    poly.setData(ui->tvData->model<DataModel>()->data());
+    Bench run(poly);
+    connect(&pd, &QProgressDialog::canceled, &run, &QThread::requestInterruption);
+    connect(&run, &Bench::val, &pd, &QProgressDialog::setValue);
+    run.start();
+    pd.exec();
+    run.wait();
+    class Dialog : public QDialog {
+    public:
+        Dialog() {
+            if(this->objectName().isEmpty())
+                this->setObjectName(QString::fromUtf8("Dialog"));
+            this->resize(420, 281);
+
+            auto verticalLayout = new QVBoxLayout(this);
+            verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
+            verticalLayout->setContentsMargins(6, 6, 6, 6);
+
+            auto tableView = new QTableView(this);
+            tableView->setObjectName(QString::fromUtf8("tableView"));
+            verticalLayout->addWidget(tableView);
+
+            struct Model : public QAbstractTableModel {
+                std::vector<std::pair<const char*, double>> m_data;
+
+            public:
+                Model() {
+                    for(auto [key, val] : Timer::avg)
+                        m_data.emplace_back(key, val / Timer::ctr[key]);
+                    std::ranges::reverse(m_data);
+                }
+                int rowCount(const QModelIndex& = {}) const override { return m_data.size(); }
+                int columnCount(const QModelIndex& = {}) const override { return 1; }
+                QVariant data(const QModelIndex& index, int role) const override {
+                    if(role == Qt::DisplayRole)
+                        return m_data[index.row()].second;
+                    else if(role == Qt::TextAlignmentRole)
+                        return Qt::AlignCenter;
+                    return {};
+                }
+                QVariant headerData(int section, Qt::Orientation orientation, int role) const override {
+                    if(role == Qt::DisplayRole) {
+                        if(orientation == Qt::Horizontal)
+                            return "Время, мксек.";
+                        else
+                            return m_data[section].first;
+                    }
+                    return {};
+                }
+                Qt::ItemFlags flags(const QModelIndex& = {}) const override { return Qt::ItemIsEnabled; }
+            };
+            tableView->setModel(new Model);
+            tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+            tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+            QMetaObject::connectSlotsByName(this);
+        }
+    } dialog;
+    dialog.exec();
 }
