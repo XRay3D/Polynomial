@@ -18,7 +18,7 @@ struct calcDegrees_i {
     virtual std::vector<ld> calcDegrees(const Data&) = 0;
 };
 
-//#define __CT__
+//#define __CT__ // Скорее это бенчмарк крмпилятора,а не алгоритма.
 #ifdef __CT__
 template <index_t D, index_t degree = D + 1>
 struct calcDegreesCt final : calcDegrees_i {
