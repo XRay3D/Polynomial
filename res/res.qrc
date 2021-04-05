@@ -43,5 +43,9 @@
         <file>icons/breeze/actions/32/document-save.svg</file>
         <file>icons/breeze/actions/32/help-about.svg</file>
         <file>icons/breeze/index.theme</file>
+        <file>icons/breeze/actions/16/format-precision-more.svg</file>
+        <file>icons/breeze/actions/22/format-precision-more.svg</file>
+        <file>icons/breeze/actions/24/format-precision-more.svg</file>
+        <file>icons/breeze/breeze.7z</file>
     </qresource>
 </RCC>
