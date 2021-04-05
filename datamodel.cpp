@@ -47,7 +47,20 @@ QVariant DataModel::data(const QModelIndex& index, int role) const {
     return {};
 }
 
-bool DataModel::setData(const QModelIndex& /*index*/, const QVariant& /*value*/, int /*role*/) {
+bool DataModel::setData(const QModelIndex& index, const QVariant& value, int role) {
+    if(role == Qt::EditRole)
+        switch(index.column()) {
+        case ColumnX:
+            m_data[index.row()].setX(value.toDouble());
+            emit dataChanged_(m_data);
+            return true;
+        case ColumnY:
+            m_data[index.row()].setY(value.toDouble());
+            emit dataChanged_(m_data);
+            return true;
+        default:
+            return {};
+        }
     return {};
 }
 
@@ -59,7 +72,9 @@ QVariant DataModel::headerData(int section, Qt::Orientation orientation, int rol
 }
 
 Qt::ItemFlags DataModel::flags(const QModelIndex& index) const {
-    return QAbstractTableModel::flags(index);
+    if(index.column() < ColumnComp)
+        return Qt::ItemIsEnabled | Qt::ItemIsEditable;
+    return Qt::ItemIsEnabled;
 }
 
 const Data& DataModel::data() const noexcept { return m_data; }

@@ -144,3 +144,7 @@ void DegreesModel::paste(QString&& clipboardStr) {
         emit dataChanged(createIndex(0, 0), createIndex(static_cast<int>(m_data.size()) - 1, 0), {Qt::DisplayRole});
     emit dataChanged_(m_data);
 }
+
+Qt::ItemFlags DegreesModel::flags(const QModelIndex&) const {
+    return Qt::ItemIsEnabled;
+}
