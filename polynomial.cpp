@@ -20,17 +20,18 @@ struct calcDegrees_i {
 
 //#define __CT__ // Скорее это бенчмарк крмпилятора,а не алгоритма.
 #ifdef __CT__
-template <index_t D, index_t degree = D + 1>
+template <index_t D>
 struct calcDegreesCt final : calcDegrees_i {
     std::vector<ld> calcDegrees(const Data& data) override {
+        constexpr index_t degree = D + 1;
         Timer{__FUNCTION__};
         array<degree, array<degree>> matrix{};
         array<degree> y{};
         array<degree> c{}; //результат
 
-        constexpr auto K = [](index_t K) { return D - K; };
-        constexpr auto J = [](index_t J) { return D - J; };
         constexpr auto I = [](index_t I) { return D - I; };
+        constexpr auto J = [](index_t J) { return D - J; };
+        constexpr auto K = [](index_t K) { return D - K; };
 
         { //построение исходной матрицы
             // Timer t { 1 };
@@ -86,9 +87,10 @@ auto arrayOfCalcCt(Seq<Is...>) {
 };
 #else
 
-template <index_t D, index_t degree = D + 1>
+template <index_t D>
 struct calcDegreesRt final : calcDegrees_i {
     std::vector<ld> calcDegrees(const Data& data) override {
+        constexpr index_t degree = D + 1;
         Timer{__FUNCTION__};
         array<degree, array<degree>> matrix{};
         array<degree> y{};

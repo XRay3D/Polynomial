@@ -203,9 +203,10 @@ void MainWindow::bench() {
     class Dialog : public QDialog {
     public:
         Dialog() {
-            if(this->objectName().isEmpty())
-                this->setObjectName(QString::fromUtf8("Dialog"));
-            this->resize(420, 281);
+            if(objectName().isEmpty())
+                setObjectName(QString::fromUtf8("Dialog"));
+            resize(400, 720);
+            setWindowTitle("Бенчмарк");
 
             auto verticalLayout = new QVBoxLayout(this);
             verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
