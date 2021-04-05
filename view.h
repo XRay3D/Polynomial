@@ -52,7 +52,8 @@ class ChartView : public QChartView {
 
 public:
     ChartView(QWidget* parent = 0);
-    void setData(const QPolygonF& data, int s = {});
+    void setData(const QPolygonF& data );
+    void setData2(const QPolygonF& data);
     void setDeltaData(const QPolygonF& data);
     void setPrec(int prec);
 

@@ -18,19 +18,25 @@ public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-signals:
-    void dataLoaded(const Data&);
-    void coeffLoaded(const Degrees&);
-
 private:
     Ui::MainWindow* ui;
 
     void saveSetings();
     void loadSetings();
 
-    QString coefFileName;
+    QString degreesFileName;
     QString dataFileName;
 
     Polynomial poly;
+
+    void loadData();
+    void saveData();
+    void saveDataAs();
+
+    void loadDegrees();
+    void saveDegrees();
+    void saveDegreesAs();
+
+    QString actionName();
 };
 #endif // MAINWINDOW_H

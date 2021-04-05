@@ -4,12 +4,12 @@
 #include "types.h"
 #include <QAbstractTableModel>
 
-class DataModel : public QAbstractTableModel {
+class DataModel final : public QAbstractTableModel, public Clipboard {
     Q_OBJECT
 
     Data m_data;
-    Degrees m_dataComp;
-    int m_precision { 3 };
+    Data m_dataComp;
+    int m_precision{3};
 
 signals:
     void dataChanged_(const Data&);
@@ -31,6 +31,7 @@ public:
         ColumnX,
         ColumnY,
         ColumnComp,
+        ColumnDelta,
         ColumnCount
     };
 
@@ -40,6 +41,10 @@ public:
 
     void load(const QString& fileName);
     void save(const QString& fileName) const;
+
+    // Clipboard interface
+    QString copy() const override;
+    void paste(QString&&) override;
 };
 
 #endif // DATAMODEL_H

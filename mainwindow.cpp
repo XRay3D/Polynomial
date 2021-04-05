@@ -1,6 +1,6 @@
 #include "mainwindow.h"
-#include "coeffmodel.h"
 #include "datamodel.h"
+#include "degreesmodel.h"
 #include "polynomial.h"
 #include "ui_mainwindow.h"
 
@@ -10,10 +10,7 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <QTextStream>
-#include <charconv>
-
-auto dataModel = (DataModel*)nullptr;
-auto coeffModel = (CoeffModel*)nullptr;
+#include <QToolBar>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -21,77 +18,43 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui->setupUi(this);
 
-    /*auto*/ dataModel = new DataModel(ui->tableView);
-    ui->tableView->setModel(dataModel);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    ui->tableView->hideColumn(DataModel::ColumnComp);
-    ui->gvData->setData(dataModel->data(), 0);
+    auto dataModel = new DataModel(ui->tvData);
+    ui->tvData->setModel(dataModel);
 
-    /*auto*/ coeffModel = new CoeffModel(ui->tableView_2);
-    ui->tableView_2->setModel(coeffModel);
-    ui->tableView_2->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    ui->tableView_2->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    [this]<auto... D>(Seq<D...>) {
+        (ui->cbxDegrees->addItem(QString::number(D + 1), D + 1), ...);
+        QSize size{0, QFontMetrics(font()).height() + 6};
+        (ui->cbxDegrees->setItemData(D, size, Qt::SizeHintRole), ...);
+        (ui->cbxDegrees->setItemData(D, Qt::AlignCenter, Qt::TextAlignmentRole), ...);
+        ui->cbxDegrees->setMaxVisibleItems(sizeof...(D));
+    }
+    (MakeSeq<MaxDegree>{});
 
-    connect(this, &MainWindow::dataLoaded, dataModel, &DataModel::setNewData);
-    connect(this, &MainWindow::dataLoaded, [this](const Data& data) { ui->gvData->setData(data); });
-
-    connect(dataModel, &DataModel::dataChanged_, [this](const Data& data) { ui->gvData->setData(data); });
-    connect(dataModel, &DataModel::dataChanged_, [this](const Data&) { emit ui->sbxDeg->valueChanged(ui->sbxDeg->value()); });
-
-    connect(coeffModel, &CoeffModel::dataChanged_, &poly, &Polynomial::setDegrees);
-    //    connect(coeffModel, &DataModel::dataChanged_, [this](const Degrees&) { emit ui->sbxDeg->valueChanged(ui->sbxDeg->value()); });
+    auto degreesModel = new DegreesModel(ui->tvDegrees);
+    ui->tvDegrees->setModel(degreesModel);
 
     { // menu File
         auto menu = menuBar()->addMenu("&Файл");
 
-        menu->addAction(
-            QIcon::fromTheme("document-open"), "Загрузить данные...", [this] {
-                dataFileName = QFileDialog::getOpenFileName(this, "Загрузить данные...", dataFileName, "*.txt;;*.bin");
-                dataModel->load(dataFileName);
-            },
-            QKeySequence::Open);
+        menu->addAction(QIcon::fromTheme("document-open"), "Загрузить данные...",
+                        this, &MainWindow::loadData, QKeySequence::Open);
 
-        menu->addAction(
-            QIcon::fromTheme("document-save"), "Сохранить данные",
-            [this] {
-                if (dataFileName.isEmpty())
-                    dataFileName = QFileDialog::getSaveFileName(this, "Сохранить данные", "", "*.txt;;*.bin");
-                dataModel->save(dataFileName);
-            });
+        menu->addAction(QIcon::fromTheme("document-save"), "Сохранить данные",
+                        this, &MainWindow::saveData);
 
-        menu->addAction(
-            QIcon::fromTheme("document-save-as"), "Сохранить данные как...",
-            [this] {
-                dataFileName = QFileDialog::getSaveFileName(this, "Сохранить данные как...", dataFileName, "*.txt;;*.bin");
-                dataModel->save(dataFileName);
-            });
+        menu->addAction(QIcon::fromTheme("document-save-as"), "Сохранить данные как...",
+                        this, &MainWindow::saveDataAs);
 
         menu->addSeparator();
 
-        menu->addAction(
-            QIcon::fromTheme("document-open"), "Загрузить коэффициенты...",
-            [this] {
-                coefFileName = QFileDialog::getOpenFileName(this, "Загрузить коэффициенты...", coefFileName, "*.txt;;*.bin");
-                coeffModel->load(coefFileName);
-            });
+        menu->addAction(QIcon::fromTheme("document-open"), "Загрузить коэффициенты...",
+                        this, &MainWindow::loadDegrees);
 
-        menu->addAction(
-            QIcon::fromTheme("document-save"), "Сохранить коэффициенты",
-            [this] {
-                if (coefFileName.isEmpty())
-                    coefFileName = QFileDialog::getSaveFileName(this, "Сохранить коэффициенты", "", "*.txt;;*.bin");
-                coeffModel->save(coefFileName);
-            },
-            QKeySequence::Save);
+        menu->addAction(QIcon::fromTheme("document-save"), "Сохранить коэффициенты",
+                        this, &MainWindow::saveDegrees, QKeySequence::Save);
 
-        menu->addAction(
-            QIcon::fromTheme("document-save-as"), "Сохранить коэффициенты как...",
-            [this] {
-                coefFileName = QFileDialog::getSaveFileName(this, "Сохранить коэффициенты как...", coefFileName, "*.txt;;*.bin");
-                coeffModel->save(coefFileName);
-            },
-            QKeySequence("Ctrl+Alt+S"));
+        menu->addAction(QIcon::fromTheme("document-save-as"), "Сохранить коэффициенты как...",
+                        this, &MainWindow::saveDegreesAs, QKeySequence("Ctrl+Alt+S"));
 
         menu->addSeparator();
 
@@ -99,60 +62,127 @@ MainWindow::MainWindow(QWidget* parent)
     }
     { // menu Справка
         auto menu = menuBar()->addMenu("Справка");
-        menu->addAction(QIcon::fromTheme("QtProject-designer"), "О Qt", [] { qApp->aboutQt(); });
+        menu->addAction(QIcon::fromTheme("help-about"), "О Qt", [] { qApp->aboutQt(); });
     }
 
-    connect(ui->sbxPrecision, qOverload<int>(&QSpinBox::valueChanged), coeffModel, &CoeffModel::setPrecision);
+    { // toolbar Управление
+
+        auto toolbar = addToolBar("Управление");
+        toolbar->setIconSize({22, 22});
+        auto action1 = toolbar->addAction(QIcon::fromTheme("format-precision-less"), "", [this] { ui->sbxPrecision->setValue(ui->sbxPrecision->value() - 1); });
+        auto action2 = toolbar->addAction(QIcon::fromTheme("format-precision-more"), "", [this] { ui->sbxPrecision->setValue(ui->sbxPrecision->value() + 1); });
+        connect(ui->sbxPrecision, qOverload<int>(&QSpinBox::valueChanged), [this, action1, action2]() {
+            action1->setEnabled(ui->sbxPrecision->value() != ui->sbxPrecision->minimum());
+            action2->setEnabled(ui->sbxPrecision->value() != ui->sbxPrecision->maximum());
+        });
+        toolbar->addSeparator();
+        toolbar->addAction(QIcon::fromTheme("labplot-xy-fit-curve"), "Рассчитать полином ", [this] {
+            poly.calcDegrees(ui->cbxDegrees->currentData().toInt());
+        });
+        toolbar->addAction(QIcon::fromTheme("labplot-xy-smoothing-curve"), "Пересчитать данные", [this, dataModel] {
+            poly.calcData(dataModel->data());
+        });
+    }
+
+    connect(&poly, &Polynomial::dataChanged, ui->gvData, &ChartView::setData2);
+    connect(&poly, &Polynomial::deltaChanged, ui->gvDelta, &ChartView::setDeltaData);
+    connect(&poly, &Polynomial::degreesChanged, degreesModel, &DegreesModel::setCoeffData);
+    connect(&poly, &Polynomial::dataChanged, dataModel, &DataModel::setNewData);
+
+    connect(degreesModel, &DegreesModel::dataChanged_, &poly, &Polynomial::setDegrees);
+
+    connect(dataModel, &DataModel::dataChanged_, &poly, &Polynomial::setData);
+    connect(dataModel, &DataModel::dataChanged_, [this](const Data&) { emit ui->cbxDegrees->currentIndexChanged(0); });
+    connect(dataModel, &DataModel::dataChanged_, ui->gvData, &ChartView::setData);
+
+    connect(ui->cbxDegrees, qOverload<int>(&QComboBox::currentIndexChanged), [this] { poly.calcDegrees(ui->cbxDegrees->currentData().toInt()); });
+    connect(ui->sbxPrecision, qOverload<int>(&QSpinBox::valueChanged), degreesModel, &DegreesModel::setPrecision);
     connect(ui->sbxPrecision, qOverload<int>(&QSpinBox::valueChanged), dataModel, &DataModel::setPrecision);
-    connect(ui->sbxDeg, qOverload<int>(&QSpinBox::valueChanged), [/*dataModel, coeffModel,*/ this](int deg) { //
-        poly.setData(dataModel->data());
-        poly.calcDegrees(deg);
-        coeffModel->setCoeffData(poly.degrees());
-        {
-            auto data1 = poly.calcData(dataModel->data());
-            ui->gvData->setData(data1, 1);
-            auto data2 = dataModel->data();
-            for (int i = 0; i < data1.size(); ++i)
-                data1[i].ry() -= data2[i].y();
-            ui->gvDelta->setDeltaData(data1);
-        }
-    });
 
     loadSetings();
+
+    //    for(int i = 0; i < 100; ++i) {
+    //        ui->cbxDegrees->valueChanged(1);
+    //    }
 }
 
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow() {
     saveSetings();
     delete ui;
 }
 
-void MainWindow::saveSetings()
-{
+void MainWindow::saveSetings() {
     QSettings settings;
     settings.beginGroup("MainWindow");
 
-    settings.setValue("coefFileName", coefFileName);
+    settings.setValue("degreesFileName", degreesFileName);
     settings.setValue("dataFileName", dataFileName);
 
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
+    settings.setValue("cbxDegrees", ui->cbxDegrees->currentIndex());
+    settings.setValue("sbxPrecision", ui->sbxPrecision->value());
     settings.setValue("splitter", ui->splitter->saveState());
     settings.endGroup();
 }
 
-void MainWindow::loadSetings()
-{
+void MainWindow::loadSetings() {
     QSettings settings;
     settings.beginGroup("MainWindow");
 
-    coefFileName = settings.value("coefFileName").toString();
+    degreesFileName = settings.value("degreesFileName").toString();
     dataFileName = settings.value("dataFileName").toString();
 
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("state").toByteArray());
+    ui->cbxDegrees->setCurrentIndex(settings.value("cbxDegrees").toInt());
+    ui->sbxPrecision->setValue(settings.value("sbxPrecision").toInt());
     ui->splitter->restoreState(settings.value("splitter").toByteArray());
     settings.endGroup();
 
-    static_cast<DataModel*>(ui->tableView->model())->load(dataFileName);
+    ui->tvData->model<DataModel>()->load(dataFileName);
+}
+
+void MainWindow::loadData() {
+    if(auto fileName{QFileDialog::getOpenFileName(this, actionName(), dataFileName, "*.txt;;*.bin")}; fileName.isEmpty())
+        return;
+    else
+        dataFileName = fileName;
+    ui->tvData->model<DataModel>()->load(dataFileName);
+}
+
+void MainWindow::saveData() {
+    if(dataFileName.isEmpty())
+        dataFileName = QFileDialog::getSaveFileName(this, actionName(), "", "*.txt;;*.bin");
+    ui->tvData->model<DataModel>()->save(dataFileName);
+}
+
+void MainWindow::saveDataAs() {
+    dataFileName = QFileDialog::getSaveFileName(this, actionName(), dataFileName, "*.txt;;*.bin");
+    ui->tvData->model<DataModel>()->save(dataFileName);
+}
+
+void MainWindow::loadDegrees() {
+    if(auto fileName{QFileDialog::getOpenFileName(this, actionName(), degreesFileName, "*.txt;;*.bin")}; fileName.isEmpty())
+        return;
+    else
+        degreesFileName = fileName;
+    ui->tvData->model<DegreesModel>()->load(degreesFileName);
+}
+
+void MainWindow::saveDegrees() {
+    if(degreesFileName.isEmpty())
+        degreesFileName = QFileDialog::getSaveFileName(this, actionName(), "", "*.txt;;*.bin");
+    ui->tvData->model<DegreesModel>()->save(degreesFileName);
+}
+
+void MainWindow::saveDegreesAs() {
+    degreesFileName = QFileDialog::getSaveFileName(this, actionName(), degreesFileName, "*.txt;;*.bin");
+    ui->tvData->model<DegreesModel>()->save(degreesFileName);
+}
+
+QString MainWindow::actionName() {
+    if(auto action = qobject_cast<QAction*>(sender()); action)
+        return action->text();
+    return {};
 }

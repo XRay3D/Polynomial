@@ -7,6 +7,8 @@ int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
 
+    QIcon::setThemeName("breeze");
+
     app.setOrganizationName("XrSoft");
     app.setApplicationName("Polynomial");
 

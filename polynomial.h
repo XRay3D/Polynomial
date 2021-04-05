@@ -4,16 +4,20 @@
 
 //template <class ld = long double, index_t MaxDdegree = 32>
 using ld = long double;
-using index_t = uint8_t;
+
 
 class Polynomial : public QObject {
     Q_OBJECT
-    static constexpr index_t MaxDegree = 32;
 
     std::vector<ld> m_degrees; //результат
     Data m_data; //массив входных данных
-
+    Data m_delta;
     inline ld calcPoly(ld x, index_t size = {});
+
+signals:
+    void degreesChanged(const Degrees&);
+    void dataChanged(const Data&);
+    void deltaChanged(const Data&);
 
 public:
     Polynomial();

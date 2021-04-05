@@ -45,8 +45,7 @@ ChartView::ChartView(QWidget* parent)
     : QChartView(parent)
     , m_coordX(0)
     , m_coordY(0)
-    , m_tooltip(0)
-{
+    , m_tooltip(0) {
     setDragMode(QChartView::NoDrag);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -61,10 +60,10 @@ ChartView::ChartView(QWidget* parent)
     //    chart->setMinimumSize(640, 480);
     //    chart->setTitle("Hover the line to show callout. Click the line to make it stay");
     //    chart->legend()->hide();
-    chart->setMargins({ 6, 6, 6, 6 });
+    chart->setMargins({6, 6, 6, 6});
 
-    QXYSeries* series[] { new QLineSeries, new QLineSeries };
-    for (auto s : series) {
+    QXYSeries* series[]{new QLineSeries, new QLineSeries};
+    for(auto s : series) {
         chart->addSeries(s);
     }
     series[0]->setName("Данные");
@@ -86,77 +85,81 @@ ChartView::ChartView(QWidget* parent)
     m_coordY->setPos(chart->size().width() / 2 + 50, chart->size().height());
     m_coordY->setText("Y: ");
 
-    for (auto s : series) {
+    for(auto s : series) {
         connect(s, &QLineSeries::clicked, this, &ChartView::keepCallout);
         connect(s, &QLineSeries::hovered, this, &ChartView::tooltip);
     }
 }
 
-void ChartView::setData(const QPolygonF& data, int s)
-{
-    if (data.empty())
+void ChartView::setData(const QPolygonF& data) {
+    if(data.empty())
         return;
-    auto lineSeries = static_cast<QLineSeries*>(chart()->series()[s]);
+    auto lineSeries = static_cast<QLineSeries*>(chart()->series().front());
     lineSeries->replace(data);
     auto [min, max] = rng::minmax(data, {}, [](const QPointF& p) { return p.y(); });
-    if (!s) {
-        mmx1 = { data.front().x(), data.back().x() };
-        mmy1 = { min.y(), max.y() };
-    } else {
-        mmx1 |= { data.front().x(), data.back().x() };
-        mmy1 |= { min.y(), max.y() };
-    }
+
+    mmx1 = {data.front().x(), data.back().x()};
+    mmy1 = {min.y(), max.y()};
+
     chart()->axes(Qt::Horizontal, lineSeries).front()->setRange(mmx1.min, mmx1.max);
     chart()->axes(Qt::Vertical, lineSeries).front()->setRange(mmy1.min, mmy1.max);
 }
 
-void ChartView::setDeltaData(const QPolygonF& data)
-{
+void ChartView::setData2(const QPolygonF& data) {
+    if(data.empty())
+        return;
+    auto lineSeries = static_cast<QLineSeries*>(chart()->series().back());
+    lineSeries->replace(data);
+    auto [min, max] = rng::minmax(data, {}, [](const QPointF& p) { return p.y(); });
+
+    mmx1 |= {data.front().x(), data.back().x()};
+    mmy1 |= {min.y(), max.y()};
+
+    chart()->axes(Qt::Horizontal, lineSeries).front()->setRange(mmx1.min, mmx1.max);
+    chart()->axes(Qt::Vertical, lineSeries).front()->setRange(mmy1.min, mmy1.max);
+}
+
+void ChartView::setDeltaData(const QPolygonF& data) {
     auto lineSeries = static_cast<QLineSeries*>(chart()->series()[1]);
     lineSeries->replace(data);
     auto [min, max] = rng::minmax(data, {}, [](const QPointF& p) { return p.y(); });
     auto maxY = std::max(abs(min.y()), abs(max.y()));
 
-    mmx1 = { data.front().x(), data.back().x() };
-    mmy1 = { -maxY, +maxY };
+    mmx1 = {data.front().x(), data.back().x()};
+    mmy1 = {-maxY, +maxY};
 
     chart()->axes(Qt::Horizontal, lineSeries).front()->setRange(mmx1.min, mmx1.max);
     chart()->axes(Qt::Vertical, lineSeries).front()->setRange(mmy1.min, mmy1.max);
 }
 
-void ChartView::setPrec(int /*prec*/)
-{
+void ChartView::setPrec(int /*prec*/) {
     chart()->axes(Qt::Horizontal, nullptr);
 }
 
-void ChartView::resizeEvent(QResizeEvent* event)
-{
+void ChartView::resizeEvent(QResizeEvent* event) {
     QChartView::resizeEvent(event);
-    if (scene()) {
+    if(scene()) {
         m_coordX->setPos(chart()->size().width() / 2 - 50, chart()->size().height() - 20);
         m_coordY->setPos(chart()->size().width() / 2 + 50, chart()->size().height() - 20);
         const auto callouts = m_callouts;
-        for (Callout* callout : callouts)
+        for(Callout* callout : callouts)
             callout->updateGeometry();
     }
 }
 
-void ChartView::mouseMoveEvent(QMouseEvent* event)
-{
+void ChartView::mouseMoveEvent(QMouseEvent* event) {
     auto pos = mapToScene(event->pos());
     m_coordX->setText(QString("X: %1").arg(pos.x()));
     m_coordY->setText(QString("Y: %1").arg(pos.y()));
     QChartView::mouseMoveEvent(event);
 }
 
-void ChartView::wheelEvent(QWheelEvent* event)
-{
+void ChartView::wheelEvent(QWheelEvent* event) {
     event->angleDelta().y() > 0 ? chart()->zoomIn() : chart()->zoomOut();
     QChartView::wheelEvent(event);
 }
 
-void ChartView::mouseDoubleClickEvent(QMouseEvent* event)
-{
+void ChartView::mouseDoubleClickEvent(QMouseEvent* event) {
     QChartView::mouseDoubleClickEvent(event);
     chart()->zoomReset();
     chart()->axes(Qt::Horizontal, nullptr).front()->setRange(mmx1.min, mmx1.max);
@@ -175,18 +178,16 @@ void ChartView::mouseDoubleClickEvent(QMouseEvent* event)
 //    QChartView::mouseReleaseEvent(event);
 //}
 
-void ChartView::keepCallout()
-{
+void ChartView::keepCallout() {
     m_callouts.append(m_tooltip);
     m_tooltip = new Callout(chart());
 }
 
-void ChartView::tooltip(QPointF point, bool state)
-{
-    if (m_tooltip == 0)
+void ChartView::tooltip(QPointF point, bool state) {
+    if(m_tooltip == 0)
         m_tooltip = new Callout(chart());
 
-    if (state) {
+    if(state) {
         m_tooltip->setText(QString("X: %1 \nY: %2 ").arg(point.x()).arg(point.y()));
         m_tooltip->setAnchor(point);
         m_tooltip->setZValue(11);

@@ -22,22 +22,26 @@ gcc:{
     -Wno-deprecated-copy
 }
 
+win32:RC_FILE = main_icon/myapp.rc
+
 SOURCES += \
     callout.cpp \
-    coeffmodel.cpp \
     datamodel.cpp \
+    degreesmodel.cpp \
     main.cpp \
     mainwindow.cpp \
     polynomial.cpp \
+    tableview.cpp \
     view.cpp
 
 HEADERS += \
     callout.h \
-    coeffmodel.h \
     ctre.hpp \
     datamodel.h \
+    degreesmodel.h \
     mainwindow.h \
     polynomial.h \
+    tableview.h \
     types.h \
     view.h
 
@@ -48,3 +52,6 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    res/res.qrc
