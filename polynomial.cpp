@@ -81,7 +81,7 @@ struct calcDegreesCt final : calcDegrees_i {
 template <index_t... Is>
 auto arrayOfCalcCt(Seq<Is...>) {
     static constexpr auto size = 8; // sizeof(calcDegreesCt<0>);
-    alignas(sizeof (void*)) static char placeHolder[size * sizeof...(Is)] = {};
+    alignas(alignof(calcDegrees_i*)) static char placeHolder[size * sizeof...(Is)] = {};
     static calcDegrees_i* funcs[] = {new(placeHolder + Is * size) calcDegreesCt<Is>...};
     return ((funcs));
 };
@@ -142,7 +142,7 @@ struct calcDegreesRt final : calcDegrees_i {
 template <index_t... Is>
 auto arrayOfCalcRt(Seq<Is...>) {
     static constexpr auto size = 8; // sizeof(calcDegreesRt<0>);
-    alignas(sizeof (void*)) static char placeHolder[size * sizeof...(Is)] = {};
+    alignas(alignof(calcDegrees_i*)) static char placeHolder[size * sizeof...(Is)] = {};
     static calcDegrees_i* funcs[] = {new(placeHolder + Is * size) calcDegreesRt<Is>...};
     return ((funcs));
 };
