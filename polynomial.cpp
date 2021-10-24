@@ -149,64 +149,79 @@ auto arrayOfCalcRt(Seq<Is...>) {
 
 #endif
 
-ld Polynomial::calcPoly(ld x, index_t size) {
-    if (!m_degrees.size())
+int Polynomial::precision() const { return precision_; }
+
+void Polynomial::setPrecision(int newPrecision) { precision_ = newPrecision; }
+
+bool Polynomial::usePrecision() const { return usePrecision_; }
+
+void Polynomial::setUsePrecision(bool newUsePrecision) { usePrecision_ = newUsePrecision; }
+
+ld Polynomial::calcPoly(ld x, std::vector<ld>& degrees, index_t size) {
+    if (!degrees.size())
         return {};
-    return (size < m_degrees.size() - 2) ? m_degrees[size] + x * calcPoly(x, size + 1) : m_degrees[size] + x * m_degrees[size + 1];
+    return (size < degrees.size() - 2) ? degrees[size] + x * calcPoly(x, degrees, size + 1) : degrees[size] + x * degrees[size + 1];
 }
 
 Polynomial::Polynomial() { }
 
-void Polynomial::addData(double x, double y) { m_data.push_back({ x, y }); }
+void Polynomial::addData(double x, double y) { data_.push_back({ x, y }); }
 
-void Polynomial::addData(const DataPoint& xy) { m_data.push_back(xy); }
+void Polynomial::addData(const DataPoint& xy) { data_.push_back(xy); }
 
-void Polynomial::setData(const Data& xy) { m_data = xy; }
+void Polynomial::setData(const Data& xy) { data_ = xy; }
 
 void Polynomial::clear() {
-    m_degrees.clear();
-    m_data.clear();
+    degrees_.clear();
+    degreesPrec_.clear();
+    data_.clear();
 }
 
 void Polynomial::calcDegrees(index_t D) {
     if (D >= MaxDegree + 1 || D < 1)
         return;
     try {
+        degrees_.clear();
+        degreesPrec_.clear();
 #ifdef __CT__
         m_degrees = arrayOfCalcCt(MakeSeq<MaxDegree + 1> {})[D]->calcDegrees(m_data);
 #else
-        m_degrees = arrayOfCalcRt(MakeSeq<MaxDegree + 1> {})[D]->calcDegrees(m_data);
+        degrees_ = arrayOfCalcRt(MakeSeq<MaxDegree + 1> {})[D]->calcDegrees(data_);
+        const int prec = pow(10, precision_);
+        for (auto&& deg : degrees_) {
+            degreesPrec_.push_back(floor(deg * prec) / prec);
+        }
 #endif
     } catch (...) {
         return;
     }
     emit degreesChanged(degrees());
-    calcData(m_data);
+    calcDataAndDeltaErr(data_);
 }
 
-Data Polynomial::calcData(Data in) {
-    m_delta.clear();
-    m_delta.reserve(in.size());
+Data Polynomial::calcDataAndDeltaErr(Data in) {
+    delta_.clear();
+    delta_.reserve(in.size());
 
     for (auto&& point : in) {
-        m_delta.push_back({ point.x(), static_cast<qreal>(calcPoly(point.x())) });
-        m_delta.back().ry() -= point.y();
-        point.ry() = calcPoly(point.x());
+        delta_.push_back({ point.x(), static_cast<qreal>(calcPoly(point.x(), usePrecision_ ? degreesPrec_ : degrees_)) });
+        delta_.back().ry() -= point.y();
+        point.ry() = calcPoly(point.x(), usePrecision_ ? degreesPrec_ : degrees_);
     }
     emit dataChanged(in);
-    emit deltaChanged(m_delta);
+    emit deltaChanged(delta_);
     return in;
 }
 
 Degrees Polynomial::degrees() const {
-    Degrees copy(m_degrees.size(), 0.0);
-    for (size_t i = 0; i < m_degrees.size(); ++i)
-        copy[i] = m_degrees[i];
+    Degrees copy(degrees_.size(), 0.0);
+    for (size_t i = 0; i < degrees_.size(); ++i)
+        copy[i] = degrees_[i];
     return copy;
 }
 
 void Polynomial::setDegrees(const Degrees& degrees) {
-    m_degrees.resize(degrees.size());
-    for (size_t i = 0; i < m_degrees.size(); ++i)
-        m_degrees[i] = degrees[i];
+    degrees_.resize(degrees.size());
+    for (size_t i = 0; i < degrees_.size(); ++i)
+        degrees_[i] = degrees[i];
 }

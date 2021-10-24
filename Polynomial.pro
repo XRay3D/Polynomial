@@ -26,24 +26,24 @@ win32:RC_FILE = main_icon/myapp.rc
 
 SOURCES += \
     callout.cpp \
+    chartview.cpp \
     datamodel.cpp \
     degreesmodel.cpp \
     main.cpp \
     mainwindow.cpp \
     polynomial.cpp \
-    tableview.cpp \
-    view.cpp
+    tableview.cpp
 
 HEADERS += \
     callout.h \
+    chartview.h \
     ctre.hpp \
     datamodel.h \
     degreesmodel.h \
     mainwindow.h \
     polynomial.h \
     tableview.h \
-    types.h \
-    view.h
+    types.h
 
 FORMS += \
     mainwindow.ui

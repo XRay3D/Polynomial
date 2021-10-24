@@ -5,14 +5,16 @@
 //template <class ld = long double, index_t MaxDdegree = 32>
 using ld = long double;
 
-
 class Polynomial : public QObject {
     Q_OBJECT
 
-    std::vector<ld> m_degrees; //результат
-    Data m_data; //массив входных данных
-    Data m_delta;
-    inline ld calcPoly(ld x, index_t size = {});
+    std::vector<ld> degrees_; //результат
+    std::vector<ld> degreesPrec_; //результат
+    Data data_; //массив входных данных
+    Data delta_;
+    int precision_ { 6 };
+    bool usePrecision_ {};
+    inline ld calcPoly(ld x, std::vector<ld> &degrees, index_t size = {});
 
 signals:
     void degreesChanged(const Degrees&);
@@ -29,8 +31,12 @@ public:
 
     void calcDegrees(index_t D);
 
-    Data calcData(Data in);
+    Data calcDataAndDeltaErr(Data in);
 
     Degrees degrees() const;
     void setDegrees(const Degrees& degrees);
+    int precision() const;
+    void setPrecision(int newPrecision);
+    bool usePrecision() const;
+    void setUsePrecision(bool newUsePrecision);
 };

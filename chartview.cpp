@@ -27,9 +27,10 @@
 **
 ****************************************************************************/
 
-#include "view.h"
+#include "chartview.h"
 #include "callout.h"
 #include <QDebug>
+#include <QGraphicsLayout>
 #include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QSplineSeries>
@@ -46,92 +47,54 @@ ChartView::ChartView(QWidget* parent)
     , m_coordX(0)
     , m_coordY(0)
     , m_tooltip(0) {
-    setDragMode(QChartView::NoDrag);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    setRubberBand(RectangleRubberBand);
-    setRenderHint(QPainter::Antialiasing);
-    setMouseTracking(true);
-    setInteractive(true);
-
-    // chart
-    auto chart = new QChart;
-    //    chart->setMinimumSize(640, 480);
-    //    chart->setTitle("Hover the line to show callout. Click the line to make it stay");
-    //    chart->legend()->hide();
-    chart->setMargins({6, 6, 6, 6});
-
-    QXYSeries* series[]{new QLineSeries, new QLineSeries};
-    for(auto s : series) {
-        chart->addSeries(s);
-    }
-    series[0]->setName("Данные");
-    series[1]->setName("Перерасчет");
-    series[0]->setPen(QPen(Qt::black, 1));
-    series[1]->setPen(QPen(Qt::red, 1));
-
-    chart->createDefaultAxes();
-    chart->setAcceptHoverEvents(true);
-    chart->setBackgroundRoundness(0);
-
-    setChart(chart);
-
-    m_coordX = new QGraphicsSimpleTextItem(chart);
-    m_coordX->setPos(chart->size().width() / 2 - 50, chart->size().height());
-    m_coordX->setText("X: ");
-
-    m_coordY = new QGraphicsSimpleTextItem(chart);
-    m_coordY->setPos(chart->size().width() / 2 + 50, chart->size().height());
-    m_coordY->setText("Y: ");
-
-    for(auto s : series) {
-        connect(s, &QLineSeries::clicked, this, &ChartView::keepCallout);
-        connect(s, &QLineSeries::hovered, this, &ChartView::tooltip);
-    }
 }
 
-void ChartView::setData(const QPolygonF& data) {
-    if(data.empty())
+void ChartView::setData0(const QPolygonF& data) {
+    if (data.empty())
         return;
+
     auto lineSeries = static_cast<QLineSeries*>(chart()->series().front());
     lineSeries->replace(data);
     auto [min, max] = rng::minmax(data, {}, [](const QPointF& p) { return p.y(); });
 
-    mmx1 = {data.front().x(), data.back().x()};
-    mmy1 = {min.y(), max.y()};
+    mmx[0] = { data.front().x(), data.back().x() };
+    mmx[0] += { mmx[1].min, mmx[1].max };
+    mmy[0] = { min.y(), max.y() };
+    mmy[0] += { mmy[1].min, mmy[1].max };
 
-    chart()->axes(Qt::Horizontal, lineSeries).front()->setRange(mmx1.min, mmx1.max);
-    chart()->axes(Qt::Vertical, lineSeries).front()->setRange(mmy1.min, mmy1.max);
+    chart()->axes(Qt::Horizontal, lineSeries).front()->setRange(mmx[0].min, mmx[0].max);
+    chart()->axes(Qt::Vertical, lineSeries).front()->setRange(mmy[0].min, mmy[0].max);
 }
 
-void ChartView::setData2(const QPolygonF& data) {
-    if(data.empty())
+void ChartView::setData1(const QPolygonF& data) {
+    if (data.empty())
         return;
     auto lineSeries = static_cast<QLineSeries*>(chart()->series().back());
     lineSeries->replace(data);
     auto [min, max] = rng::minmax(data, {}, [](const QPointF& p) { return p.y(); });
 
-    mmx1 |= {data.front().x(), data.back().x()};
-    mmy1 |= {min.y(), max.y()};
+    mmx[1] = { data.front().x(), data.back().x() };
+    mmx[1] += { mmx[0].min, mmx[0].max };
+    mmy[1] = { min.y(), max.y() };
+    mmy[1] += { mmy[0].min, mmy[0].max };
 
-    chart()->axes(Qt::Horizontal, lineSeries).front()->setRange(mmx1.min, mmx1.max);
-    chart()->axes(Qt::Vertical, lineSeries).front()->setRange(mmy1.min, mmy1.max);
+    chart()->axes(Qt::Horizontal, lineSeries).front()->setRange(mmx[1].min, mmx[1].max);
+    chart()->axes(Qt::Vertical, lineSeries).front()->setRange(mmy[1].min, mmy[1].max);
 }
 
 void ChartView::setDeltaData(const QPolygonF& data) {
-    if(data.empty())
+    if (data.empty())
         return;
-    auto lineSeries = static_cast<QLineSeries*>(chart()->series()[1]);
+    auto lineSeries = static_cast<QLineSeries*>(chart()->series()[0]);
     lineSeries->replace(data);
     auto [min, max] = rng::minmax(data, {}, [](const QPointF& p) { return p.y(); });
     auto maxY = std::max(abs(min.y()), abs(max.y()));
 
-    mmx1 = {data.front().x(), data.back().x()};
-    mmy1 = {-maxY, +maxY};
+    mmx[0] = { data.front().x(), data.back().x() };
+    mmy[0] = { -maxY, +maxY };
 
-    chart()->axes(Qt::Horizontal, lineSeries).front()->setRange(mmx1.min, mmx1.max);
-    chart()->axes(Qt::Vertical, lineSeries).front()->setRange(mmy1.min, mmy1.max);
+    chart()->axes(Qt::Horizontal, lineSeries).front()->setRange(mmx[0].min, mmx[0].max);
+    chart()->axes(Qt::Vertical, lineSeries).front()->setRange(mmy[0].min, mmy[0].max);
 }
 
 void ChartView::setPrec(int /*prec*/) {
@@ -140,11 +103,11 @@ void ChartView::setPrec(int /*prec*/) {
 
 void ChartView::resizeEvent(QResizeEvent* event) {
     QChartView::resizeEvent(event);
-    if(scene()) {
+    if (scene()) {
         m_coordX->setPos(chart()->size().width() / 2 - 50, chart()->size().height() - 20);
         m_coordY->setPos(chart()->size().width() / 2 + 50, chart()->size().height() - 20);
         const auto callouts = m_callouts;
-        for(Callout* callout : callouts)
+        for (Callout* callout : callouts)
             callout->updateGeometry();
     }
 }
@@ -164,8 +127,10 @@ void ChartView::wheelEvent(QWheelEvent* event) {
 void ChartView::mouseDoubleClickEvent(QMouseEvent* event) {
     QChartView::mouseDoubleClickEvent(event);
     chart()->zoomReset();
-    chart()->axes(Qt::Horizontal, nullptr).front()->setRange(mmx1.min, mmx1.max);
-    chart()->axes(Qt::Vertical, nullptr).front()->setRange(mmy1.min, mmy1.max);
+    chart()->axes(Qt::Horizontal, nullptr).front()->setRange(mmx[0].min, mmx[0].max);
+    MinMax mm { mmy[0] };
+    mm += { mmy[1].min, mmy[1].max };
+    chart()->axes(Qt::Vertical, nullptr).front()->setRange(mm.min, mm.max);
 }
 
 //void ChartView::mousePressEvent(QMouseEvent* event)
@@ -186,10 +151,10 @@ void ChartView::keepCallout() {
 }
 
 void ChartView::tooltip(QPointF point, bool state) {
-    if(m_tooltip == 0)
+    if (m_tooltip == 0)
         m_tooltip = new Callout(chart());
 
-    if(state) {
+    if (state) {
         m_tooltip->setText(QString("X: %1 \nY: %2 ").arg(point.x()).arg(point.y()));
         m_tooltip->setAnchor(point);
         m_tooltip->setZValue(11);
@@ -198,4 +163,78 @@ void ChartView::tooltip(QPointF point, bool state) {
     } else {
         m_tooltip->hide();
     }
+}
+
+void ChartView::init(const QStringList& names) {
+    setDragMode(QChartView::NoDrag);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    setRubberBand(RectangleRubberBand);
+    setRenderHint(QPainter::Antialiasing);
+    setMouseTracking(true);
+    setInteractive(true);
+
+    // chart
+    auto chart = new QChart;
+    //    chart->setMinimumSize(640, 480);
+    //    chart->setTitle("Hover the line to show callout. Click the line to make it stay");
+    //    chart->legend()->hide();
+    chart->setMargins({ 6, 6, 6, 6 });
+    chart->layout()->setContentsMargins(0, 0, 0, 0);
+
+    m_coordX = new QGraphicsSimpleTextItem(chart);
+    m_coordX->setPos(chart->size().width() / 2 - 50, chart->size().height());
+    m_coordX->setText("X: ");
+
+    m_coordY = new QGraphicsSimpleTextItem(chart);
+    m_coordY->setPos(chart->size().width() / 2 + 50, chart->size().height());
+    m_coordY->setText("Y: ");
+
+    for (int ctr {}; auto&& name : names) {
+        auto series = new QLineSeries { this };
+
+        chart->addSeries(series);
+
+        series->setName(name);
+        series->setPen(!ctr ? QPen(Qt::black, 1) : QPen(Qt::red, 1));
+
+        chart->createDefaultAxes();
+        chart->setAcceptHoverEvents(true);
+        chart->setBackgroundRoundness(0);
+
+        setChart(chart);
+
+        connect(series, &QLineSeries::clicked, this, &ChartView::keepCallout);
+        connect(series, &QLineSeries::hovered, this, &ChartView::tooltip);
+        ++ctr;
+    }
+
+    //    QXYSeries* series[] { new QLineSeries, new QLineSeries };
+    //    for (auto s : series) {
+    //        chart->addSeries(s);
+    //    }
+    //    series[0]->setName("Данные");
+    //    series[1]->setName("Перерасчет");
+    //    series[0]->setPen(QPen(Qt::black, 1));
+    //    series[1]->setPen(QPen(Qt::red, 1));
+
+    //    chart->createDefaultAxes();
+    //    chart->setAcceptHoverEvents(true);
+    //    chart->setBackgroundRoundness(0);
+
+    //    setChart(chart);
+
+    //    m_coordX = new QGraphicsSimpleTextItem(chart);
+    //    m_coordX->setPos(chart->size().width() / 2 - 50, chart->size().height());
+    //    m_coordX->setText("X: ");
+
+    //    m_coordY = new QGraphicsSimpleTextItem(chart);
+    //    m_coordY->setPos(chart->size().width() / 2 + 50, chart->size().height());
+    //    m_coordY->setText("Y: ");
+
+    //    for (auto s : series) {
+    //        connect(s, &QLineSeries::clicked, this, &ChartView::keepCallout);
+    //        connect(s, &QLineSeries::hovered, this, &ChartView::tooltip);
+    //    }
 }

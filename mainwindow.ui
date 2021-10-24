@@ -28,6 +28,26 @@
      <number>6</number>
     </property>
     <item row="0" column="3">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>  Степень:  </string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="5">
+     <spacer name="horizontalSpacer">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item row="0" column="4">
      <widget class="QComboBox" name="cbxDegrees">
       <property name="minimumSize">
        <size>
@@ -37,11 +57,13 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="0">
-     <widget class="QLabel" name="label">
-      <property name="text">
-       <string>  Точность (текст):  </string>
+    <item row="1" column="0" colspan="6">
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
       </property>
+      <widget class="ChartView" name="gvData"/>
+      <widget class="ChartView" name="gvDelta"/>
      </widget>
     </item>
     <item row="0" column="1">
@@ -63,33 +85,18 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="2">
-     <widget class="QLabel" name="label_2">
+    <item row="0" column="0">
+     <widget class="QLabel" name="label">
       <property name="text">
-       <string>  Степень:  </string>
+       <string>  Точность:  </string>
       </property>
      </widget>
     </item>
-    <item row="0" column="4">
-     <spacer name="horizontalSpacer">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
+    <item row="0" column="2">
+     <widget class="QCheckBox" name="chbxPrec">
+      <property name="text">
+       <string>Использовать точность для расчётов</string>
       </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>40</width>
-        <height>20</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
-    <item row="1" column="0" colspan="5">
-     <widget class="QSplitter" name="splitter">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <widget class="ChartView" name="gvData"/>
-      <widget class="ChartView" name="gvDelta"/>
      </widget>
     </item>
    </layout>
@@ -176,7 +183,7 @@
   <customwidget>
    <class>ChartView</class>
    <extends>QGraphicsView</extends>
-   <header>view.h</header>
+   <header>chartview.h</header>
   </customwidget>
   <customwidget>
    <class>TableView</class>
