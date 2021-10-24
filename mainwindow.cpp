@@ -78,10 +78,10 @@ MainWindow::MainWindow(QWidget* parent)
             action2->setEnabled(ui->sbxPrecision->value() != ui->sbxPrecision->maximum());
         });
         toolbar->addSeparator();
-        toolbar->addAction(QIcon::fromTheme("labplot-xy-fit-curve"), "Рассчитать полином ", [this] {
+        toolbar->addAction(QIcon::fromTheme("labplot-xy-fit-curve"), "Рассчитать полином", [this] {
             poly.calcDegrees(ui->cbxDegrees->currentData().toInt());
         });
-        toolbar->addAction(QIcon::fromTheme("labplot-xy-smoothing-curve"), "Пересчитать данные", [this, dataModel] {
+        toolbar->addAction(QIcon::fromTheme("labplot-xy-smoothing-curve"), "Пересчитать данные и ошибку", [this, dataModel] {
             poly.calcData(dataModel->data());
         });
         toolbar->addSeparator();
